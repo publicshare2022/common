@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -44,5 +45,9 @@ func (l *GormLogger) Error(ctx context.Context, msg string, data ...interface{})
 func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
 	sql, rows := fc()
-	logx.WithContext(ctx).WithDuration(elapsed).Slowf("Trace sql: %v row: %v \nerr: %v", sql, rows, err)
+	msg := fmt.Sprintf("Trace sql: %v row: %v", sql, rows)
+	if err != nil {
+		msg += fmt.Sprintf(" error: %v", err)
+	}
+	logx.WithContext(ctx).WithDuration(elapsed).Slow(msg)
 }
