@@ -6,6 +6,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/zeromicro/go-zero v1.5.4
 	google.golang.org/grpc v1.56.2
+	gorm.io/gorm v1.25.5
 )
 
 require (
