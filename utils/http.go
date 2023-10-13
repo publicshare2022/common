@@ -36,13 +36,22 @@ func HttpDo(ctx context.Context, method, uri string, data []byte, header http.He
 	if header != nil {
 		req.Header = header
 	}
-	logx.WithContext(ctx).Debugf("%s %s, body %s", method, uri, data)
+
 	resp, err := client.Do(req)
+	fields := []logx.LogField{
+		logx.Field("method", method),
+		logx.Field("uri", uri),
+	}
+	if data != nil {
+		fields = append(fields, logx.Field("body", string(data)))
+	}
+
 	if err != nil {
+		logx.WithContext(ctx).WithFields(fields...).Error(err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 	ret, err := io.ReadAll(resp.Body)
-	logx.WithContext(ctx).Debugf("%s %s, return %s", method, uri, data)
+	logx.WithContext(ctx).WithFields(fields...).Debug(string(ret))
 	return ret, err
 }
