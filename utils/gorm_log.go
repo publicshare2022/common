@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -10,44 +10,46 @@ import (
 )
 
 type GormLogger struct {
-	LogLevel logger.LogLevel
+	SlowThreshold time.Duration
 }
 
-func NewGormLogger() logger.Interface {
-	return new(GormLogger)
+// debug,info,error,severe
+func NewGormLogger(slow time.Duration) logger.Interface {
+	return &GormLogger{
+		SlowThreshold: slow,
+	}
 }
 
 func (l *GormLogger) LogMode(level logger.LogLevel) logger.Interface {
-	l.LogLevel = level
 	return l
 }
 
 func (l *GormLogger) Info(ctx context.Context, msg string, data ...interface{}) {
-	if l.LogLevel < logger.Info {
-		return
-	}
 	logx.WithContext(ctx).Debugf(msg, data)
 }
+
 func (l *GormLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
-	if l.LogLevel < logger.Warn {
-		return
-	}
 	logx.WithContext(ctx).Infof(msg, data)
 }
 
 func (l *GormLogger) Error(ctx context.Context, msg string, data ...interface{}) {
-	if l.LogLevel < logger.Error {
-		return
-	}
 	logx.WithContext(ctx).Errorf(msg, data)
 }
 
 func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
 	sql, rows := fc()
-	msg := fmt.Sprintf("Trace sql: %v row: %v", sql, rows)
-	if err != nil {
-		msg += fmt.Sprintf(" error: %v", err)
+	fidlds := []logx.LogField{
+		logx.Field("rows", rows),
+		logx.Field("sql", sql),
 	}
-	logx.WithContext(ctx).WithDuration(elapsed).Slow(msg)
+
+	switch {
+	case err != nil && (!errors.Is(err, logger.ErrRecordNotFound)):
+		logx.WithContext(ctx).WithDuration(elapsed).WithFields(fidlds...).Error(err)
+	case elapsed > l.SlowThreshold && l.SlowThreshold != 0:
+		logx.WithContext(ctx).WithDuration(elapsed).WithFields(fidlds...).Slowf("SLOW SQL >= %v", l.SlowThreshold)
+	default:
+		logx.WithContext(ctx).WithDuration(elapsed).WithFields(fidlds...).Debug()
+	}
 }
