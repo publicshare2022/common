@@ -18,10 +18,7 @@ func Parse(r *http.Request, v any) error {
 	}
 
 	ct := r.Header.Get("Content-Type")
-	d, _, err := mime.ParseMediaType(ct)
-	if err != nil {
-		return err
-	}
+	d, _, _ := mime.ParseMediaType(ct)
 	if d == "application/json" {
 		if err := httpx.ParseJsonBody(r, v); err != nil {
 			return err
