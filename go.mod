@@ -1,4 +1,4 @@
-module git.ycsoft.site/go-zero/common
+module github.com/publicshare2022/common
 
 go 1.20
 
